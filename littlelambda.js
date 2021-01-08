@@ -2,7 +2,7 @@
   var debugPrint = x => {
     let p = y => {
       if (y instanceof Array) {
-        return "(" + y.map(p).join(" ") + ")"
+        return `(${y.map(p).join(" ")})`
       } else {
         return y["original-value"] ?? y.value ?? y
       }
@@ -26,7 +26,7 @@
 
   var alphaConvertId = function(id, alpha) {
     return {...id, 
-      "value": id.value + "_" + alpha[id.value], 
+      "value": `${id.value}_${alpha[id.value]}`, 
       "original-value": id.value
     }
   };
@@ -159,9 +159,9 @@
   var compile = function(input) {
     let c = i => {
       if (isFunction(i)) {
-        return i[1][0].value + " => { return " + c(i[2]) + " } ";
+        return `${i[1][0].value} => { return ${c(i[2])} }`;
       } else if (i instanceof Array) {
-        return " [" + i.map(c).join(", ") + "] ";
+        return `[${i.map(c).join(", ")}]`;
       } else {
         return i.value;
       }
