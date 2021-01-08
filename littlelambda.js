@@ -1,11 +1,4 @@
 ;(function(exports) {
-  var library = {
-    print: function(x) {
-      console.log(x);
-      return x;
-    }
-  };
-
   var debugPrint = x => {
     let p = y => {
       if (y instanceof Array) {
