@@ -1,12 +1,18 @@
-# Little Lisp
+# Little Lambda
 
-A mini Lisp interpreter in JavaScript.  Supports lists (obvs), function invocation, lambdas, lets, if statements, numbers, strings and the library functions `first`, `rest` and `print`.
+A mini Lambda calculus interpreter in JavaScript.  Supports function invocation, lambdas, lets, and the library function `print`.
 
-* By Mary Rose Cook
+"let" is like Common Lisp's "let*". The assignments are done serially, not in parallel. 
+
+* By Thomas Cowart
+* http://tncow.art
+* georgemcfly@gmail.com
+
+* Based on LittleLisp Mary Rose Cook
 * https://maryrosecook.com
 * mary@maryrosecook.com
 
-Thank you to Martin Tornwall for the implementations of let and if.
+Thank you to Martin Tornwall for the implementation of let.
 
 ## Repl
 
@@ -21,9 +27,9 @@ $ node repl.js
 ```
 
 ```lisp
-(first (1 2 3))
+(1 2 3)
 ```
 
 ```lisp
-((lambda (x) (rest x)) ("a" "b" "c"))
+
 ```

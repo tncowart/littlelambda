@@ -1,10 +1,10 @@
 var repl = require("repl");
-var littleLisp = require("./littlelisp").littleLisp;
+var littleLisp = require("./littlelambda").littleLambda;
 
 repl.start({
   prompt: "> ",
   eval: function(cmd, context, filename, callback) {
-    var ret = littleLisp.interpret(littleLisp.parse(cmd));
+    var ret = littleLambda.interpret(littleLambda.parse(cmd));
     callback(null, ret);
   }
 });
