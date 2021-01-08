@@ -15,7 +15,7 @@
     this.scope = scope;
     this.parent = parent;
 
-    this.get = function(identifier) {
+    this.get = identifier => {
       if (identifier in this.scope) {
         return this.scope[identifier];
       } else if (this.parent !== undefined) {
@@ -24,7 +24,7 @@
     };
   };
 
-  var alphaConvertId = function(id, alpha) {
+  var alphaConvertId = (id, alpha) => {
     return {...id, 
       "value": `${id.value}_${alpha[id.value]}`, 
       "original-value": id.value
@@ -32,16 +32,16 @@
   };
 
   var special_forms = {
-    let: function(input, alpha) {
-      let newBindings = input[1].map(function(binding) {
+    let: (input, alpha) => {
+      let newBindings = input[1].map(binding => {
         alpha[binding[0].value] = (alpha[binding[0].value] ?? 0) + 1
         return [alphaConvertId(binding[0], alpha), alphaConvert(binding[1], alpha)]
       });
       return [input[0], newBindings, alphaConvert(input[2], alpha)]
     },
 
-    "\\": function(input, alpha) {
-      let newParams = input[1].map(function(id) {
+    "\\": (input, alpha) => {
+      let newParams = input[1].map(id => {
         alpha[id.value] = (alpha[id.value] ?? 0) + 1;
         return alphaConvertId(id, alpha);
       });
@@ -49,7 +49,7 @@
     }
   };
 
-  var alphaConvertList = function(input, alpha) {
+  var alphaConvertList = (input, alpha) => {
     // all special forms are 3 elements long
     if (input.length == 3 && input[0].value in special_forms) {
       return special_forms[input[0].value](input, alpha);
@@ -58,7 +58,7 @@
     }
   };
 
-  var alphaConvert = function(input, alpha) {
+  var alphaConvert = (input, alpha) => {
     if (alpha === undefined) {
       return alphaConvert(input, {});
     } else if (input instanceof Array) {
@@ -72,11 +72,15 @@
     }
   };
 
-  var curryList = function(input) {
-    if (input.length == 3 && input[0].value == "\\") {
+  var isFunction = input => {
+    return input.length == 3 && input[0].value == '\\'
+  }
+
+  var curryList = input => {
+    if (isFunction(input)) {
       if (input[1].length < 2) { return input }
 
-      return input[1].reverse().reduce(function(acc, arg) {
+      return input[1].reverse().reduce((acc, arg) => {
         return [input[0], [arg], acc]
       }, curry(input[2]))
     } else {
@@ -84,7 +88,7 @@
     }
   };
 
-  var curry = function(input) {
+  var curry = input => {
     if (input instanceof Array) {
       return curryList(input);
     } else if (input.type === "identifier") {
@@ -93,9 +97,9 @@
   };
 
   // Delet replaces all uses of "let" named values with the actual value
-  var deletList = function(input, context) {
-    if (input.length == 3 && input[0].value == "let") {
-      let ctx = input[1].reduce(function(acc, binding) {
+  var deletList = (input, context) => {
+    if (input.length == 3 && input[0].value === "let") {
+      let ctx = input[1].reduce((acc, binding) => {
         acc.scope[binding[0].value] = binding[1]
         return acc
       }, new Context({}, context));
@@ -105,7 +109,7 @@
     }
   }
 
-  var delet = function(input, context) {
+  var delet = (input, context) => {
     if (context === undefined) {
       return delet(input, new Context({}))
     } else if (input instanceof Array) {
@@ -115,15 +119,11 @@
     }
   }
 
-  var isFunction = function(input) {
-    return input.length == 3 && input[0].value == '\\'
-  }
-
-  var isFunctionApplication = function(input) {
+  var isFunctionApplication = input => {
     return input instanceof Array && input.length > 1 && isFunction(input[0])
   }
 
-  var replaceIdentifier = function(item, identifier, replacement) {
+  var replaceIdentifier = (item, identifier, replacement) => {
     if (isFunction(item)) {
       return [item[0], item[1], replaceIdentifier(item[2], identifier, replacement)]
     } else if (item instanceof Array) {
@@ -135,12 +135,12 @@
     }
   }
 
-  var reduceLambda = function(lambda, arg) {
+  var reduceLambda = (lambda, arg) => {
     let paramId = lambda[1][0];
     return replaceIdentifier(lambda[2], paramId, arg);
   }
 
-  var betaReduce = function(input) {
+  var betaReduce = input => {
     if (isFunctionApplication(input)) {
       return input.slice(1).reduce(function(acc, l) {
         if (!isFunction(acc[0])) { return acc }
@@ -156,7 +156,7 @@
     }
   }
 
-  var compile = function(input) {
+  var compile = input => {
     let c = i => {
       if (isFunction(i)) {
         return `${i[1][0].value} => { return ${c(i[2])} }`;
@@ -171,11 +171,11 @@
     return eval(c(input))
   }
 
-  var categorize = function(input) {
+  var categorize = input => {
     return { type:'identifier', value: input };
   };
 
-  var parenthesize = function(input, list) {
+  var parenthesize = (input, list) => {
     if (list === undefined) {
       return parenthesize(input, []);
     } else {
@@ -193,14 +193,14 @@
     }
   };
 
-  var tokenize = function(input) {
+  var tokenize = input => {
     return input.replace(/\(/g, ' ( ')
                 .replace(/\)/g, ' ) ')
                 .trim()
                 .split(/\s+/);
   };
 
-  var interpret = function(input) {
+  var interpret = input => {
     return betaReduce(delet(curry(alphaConvert(input))))
   }
 
