@@ -24,45 +24,26 @@
     };
   };
 
-  var alphaConvertId = (id, alpha) => {
-    return {...id, 
-      "value": `${id.value}_${alpha[id.value]}`, 
-      "original-value": id.value
-    }
+  var alpha = {}
+
+  var alphaConvertId = (id) => {
+    let idCopy = {...id}
+    idCopy["value"] = `${id.value}-${alpha[id.value]}`
+    idCopy["original-value"] = idCopy["original-value"] ?? id.value
+    return idCopy
   };
 
-  var special_forms = {
-    let: (input, alpha) => {
-      let newBindings = input[1].map(binding => {
-        alpha[binding[0].value] = (alpha[binding[0].value] ?? 0) + 1
-        return [alphaConvertId(binding[0], alpha), alphaConvert(binding[1], alpha)]
-      });
-      return [input[0], newBindings, alphaConvert(input[2], alpha)]
-    },
-
-    "\\": (input, alpha) => {
-      let newParams = input[1].map(id => {
-        alpha[id.value] = (alpha[id.value] ?? 0) + 1;
-        return alphaConvertId(id, alpha);
-      });
-      return [input[0], newParams, alphaConvert(input[2], alpha)]
-    }
-  };
-
-  var alphaConvertList = (input, alpha) => {
-    // all special forms are 3 elements long
-    if (input.length == 3 && input[0].value in special_forms) {
-      return special_forms[input[0].value](input, alpha);
-    } else {
-      return input.map(x => alphaConvert(x, alpha));
-    }
-  };
-
-  var alphaConvert = (input, alpha) => {
-    if (alpha === undefined) {
-      return alphaConvert(input, {});
-    } else if (input instanceof Array) {
-      return alphaConvertList(input, alpha);
+  var alphaConvert = (input) => {
+    if (input instanceof Array) {
+      if (isFunction(input)) {
+        let newParams = input[1].map(id => {
+          alpha[id.value] = (alpha[id.value] ?? 0) + 1;
+          return alphaConvertId(id, alpha);
+        });
+        return [input[0], newParams, alphaConvert(input[2], alpha)]
+      } else {
+        return input.map(x => alphaConvert(x, alpha));
+      }
     } else if (input.type === "identifier") {
       if (alpha[input.value] === undefined) {
         return input;
@@ -96,7 +77,7 @@
     }
   };
 
-  // Delet replaces all uses of "let" named values with the actual value
+  // De-let replaces all uses of "let" named values with the actual value
   var deletList = (input, context) => {
     if (input.length == 3 && input[0].value === "let") {
       let ctx = input[1].reduce((acc, binding) => {
@@ -145,7 +126,7 @@
       return input.slice(1).reduce(function(acc, l) {
         if (!isFunction(acc[0])) { return acc }
 
-        if (acc.slice(2).length == 0) { return reduceLambda(acc[0], l) } // were doing the last arg
+        if (acc.slice(2).length == 0) { return reduceLambda(acc[0], l) } // were reducing with the last arg
         
         return betaReduce([reduceLambda(acc[0], l), ...acc.slice(2)])
       }, input)
@@ -171,7 +152,8 @@
     return eval(c(input))
   }
 
-  var categorize = input => {
+  var id_checker = input => {
+    if(input.indexOf("-") != -1) { throw `Invalid identifier: ${input}\n  "-" is not allowed in identifiers`}
     return { type:'identifier', value: input };
   };
 
@@ -188,7 +170,7 @@
       } else if (token === ")") {
         return list;
       } else {
-        return parenthesize(input, list.concat(categorize(token)));
+        return parenthesize(input, list.concat(id_checker(token)));
       }
     }
   };
@@ -201,7 +183,7 @@
   };
 
   var interpret = input => {
-    return betaReduce(delet(curry(alphaConvert(input))))
+    return betaReduce(delet(curry(input)))
   }
 
   exports.littleLambda = {

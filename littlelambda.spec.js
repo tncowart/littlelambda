@@ -68,14 +68,6 @@ describe('littleLisp', function() {
     it('should rename lambda bound identifiers', function() {
       expect(unannotate(t.alphaConvert(t.parse('(\\ (a b) (a b 3))')))).toEqual(["\\", ["a", "b"], ["a", "b", "3"]]);
     });
-
-    it('should rename let bound identifiers', function() {
-      expect(unannotate(t.alphaConvert(t.parse('(let ((a 1) (b 2)) (\\ () (a b)))')))).toEqual(["let", [["a", "1"], ["b", "2"]], ["\\", [], ["a", "b"]]]);
-    });
-
-    it('should rename let and lambda bound identifiers', function() {
-      expect(unannotate(t.alphaConvert(t.parse('(let ((a 1) (b 2)) (\\ (b) (a b)))')))).toEqual(["let", [["a", "1"], ["b", "2"]], ["\\", ["b"], ["a", "b"]]]);
-    });
   });
 
   describe('currying', function() {
@@ -164,14 +156,14 @@ describe('littleLisp', function() {
       });
 
       it('should return true', function() {
-        let f = t.compile(t.parse(`
+        let _true = t.compile(t.parse(`
         (let ((TRUE (\\ (x y) x))
               (FALSE (\\ (x y) y))
               (AND (\\ (x y) (x y x))))
              (AND TRUE TRUE))`
              ));
 
-        expect(f(1)(0)).toEqual(1);
+        expect(_true(1)(0)).toEqual(1);
       });
     });
   });
