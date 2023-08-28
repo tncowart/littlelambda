@@ -1,5 +1,5 @@
-;(function(exports) {
-  var debugPrint = x => {
+; (function (exports) {
+  let debugPrint = x => {
     let p = y => {
       if (y instanceof Array) {
         return `(${y.map(p).join(" ")})`
@@ -11,7 +11,7 @@
     return x;
   }
 
-  var Context = function(scope, parent) {
+  let Context = function (scope, parent) {
     this.scope = scope;
     this.parent = parent;
 
@@ -24,16 +24,16 @@
     };
   };
 
-  var alpha = {}
+  let alpha = {}
 
-  var alphaConvertId = (id) => {
-    let idCopy = {...id}
+  let alphaConvertId = (id) => {
+    let idCopy = { ...id }
     idCopy["value"] = `${id.value}-${alpha[id.value]}`
     idCopy["original-value"] = idCopy["original-value"] ?? id.value
     return idCopy
   };
 
-  var alphaConvert = (input) => {
+  let alphaConvert = (input) => {
     if (input instanceof Array) {
       if (isFunction(input)) {
         let newParams = input[1].map(id => {
@@ -53,11 +53,11 @@
     }
   };
 
-  var isFunction = input => {
+  let isFunction = input => {
     return input.length == 3 && input[0].value == '\\'
   }
 
-  var curryList = input => {
+  let curryList = input => {
     if (isFunction(input)) {
       if (input[1].length < 2) { return input }
 
@@ -69,7 +69,7 @@
     }
   };
 
-  var curry = input => {
+  let curry = input => {
     if (input instanceof Array) {
       return curryList(input);
     } else if (input.type === "identifier") {
@@ -78,7 +78,7 @@
   };
 
   // De-let replaces all uses of "let" named values with the actual value
-  var deletList = (input, context) => {
+  let deletList = (input, context) => {
     if (input.length == 3 && input[0].value === "let") {
       let ctx = input[1].reduce((acc, binding) => {
         acc.scope[binding[0].value] = binding[1]
@@ -90,7 +90,7 @@
     }
   }
 
-  var delet = (input, context) => {
+  let delet = (input, context) => {
     if (context === undefined) {
       return delet(input, new Context({}))
     } else if (input instanceof Array) {
@@ -100,11 +100,11 @@
     }
   }
 
-  var isFunctionApplication = input => {
+  let isFunctionApplication = input => {
     return input instanceof Array && input.length > 1 && isFunction(input[0])
   }
 
-  var replaceIdentifier = (item, identifier, replacement) => {
+  let replaceIdentifier = (item, identifier, replacement) => {
     if (isFunction(item)) {
       return [item[0], item[1], replaceIdentifier(item[2], identifier, replacement)]
     } else if (item instanceof Array) {
@@ -116,18 +116,18 @@
     }
   }
 
-  var reduceLambda = (lambda, arg) => {
+  let reduceLambda = (lambda, arg) => {
     let paramId = lambda[1][0];
     return replaceIdentifier(lambda[2], paramId, arg);
   }
 
-  var betaReduce = input => {
+  let betaReduce = input => {
     if (isFunctionApplication(input)) {
-      return input.slice(1).reduce(function(acc, l) {
+      return input.slice(1).reduce(function (acc, l) {
         if (!isFunction(acc[0])) { return acc }
 
         if (acc.slice(2).length == 0) { return reduceLambda(acc[0], l) } // were reducing with the last arg
-        
+
         return betaReduce([reduceLambda(acc[0], l), ...acc.slice(2)])
       }, input)
     } else if (input instanceof Array) {
@@ -137,7 +137,7 @@
     }
   }
 
-  var compile = input => {
+  let compile = input => {
     let c = i => {
       if (isFunction(i)) {
         return `${i[1][0].value} => { return ${c(i[2])} }`;
@@ -152,16 +152,16 @@
     return eval(c(input))
   }
 
-  var id_checker = input => {
-    if(input.indexOf("-") != -1) { throw `Invalid identifier: ${input}\n  "-" is not allowed in identifiers`}
-    return { type:'identifier', value: input };
+  let id_checker = input => {
+    if (input.indexOf("-") != -1) { throw `Invalid identifier: ${input}\n  "-" is not allowed in identifiers` }
+    return { type: 'identifier', value: input };
   };
 
-  var parenthesize = (input, list) => {
+  let parenthesize = (input, list) => {
     if (list === undefined) {
       return parenthesize(input, []);
     } else {
-      var token = input.shift();
+      let token = input.shift();
       if (token === undefined) {
         return list.pop();
       } else if (token === "(") {
@@ -175,14 +175,14 @@
     }
   };
 
-  var tokenize = input => {
+  let tokenize = input => {
     return input.replace(/\(/g, ' ( ')
-                .replace(/\)/g, ' ) ')
-                .trim()
-                .split(/\s+/);
+      .replace(/\)/g, ' ) ')
+      .trim()
+      .split(/\s+/);
   };
 
-  var interpret = input => {
+  let interpret = input => {
     return betaReduce(delet(curry(input)))
   }
 
