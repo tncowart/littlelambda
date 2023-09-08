@@ -1,8 +1,52 @@
-import { parse } from "../littlelambda.js";
+import { parse, Lambda } from "../littlelambda.js";
 
 var is = function (input, type) {
   return Object.prototype.toString.call(input) === "[object " + type + "]";
 };
+
+function arrayCompare(first, second) {
+  if (first.length != second.length) {
+    return false;
+  }
+
+  let equal = true;
+  for (let i = 0; i < first.length && equal; i++) {
+    if (Array.isArray(first[i]) && Array.isArray(second[i])) {
+      equal &&= arrayCompare(first[i], second[i]);
+    } else if (
+      first[i].constructor.name === "Lambda" &&
+      second[i].constructor.name === "Lambda"
+    ) {
+      equal &&= lambdaCompare(first[i], second[i]);
+    } else {
+      equal &&= first[i] === second[i];
+    }
+  }
+
+  return equal;
+}
+
+function lambdaCompare(first, second) {
+  return (
+    first.constructor.name === "Lambda" &&
+    second.constructor.name === "Lambda" &&
+    arrayCompare(first.parameters, second.parameters) &&
+    arrayCompare(first.body, second.body)
+  );
+}
+
+function customFTester(first, second) {
+  if (
+    first.constructor.name === "Lambda" &&
+    second.constructor.name === "Lambda"
+  ) {
+    return lambdaCompare(first, second);
+  }
+}
+
+beforeEach(function () {
+  jasmine.addCustomEqualityTester(customFTester);
+});
 
 // takes an AST and replaces type annotated nodes with raw values
 var unannotate = function (input) {
@@ -55,10 +99,19 @@ describe("littleLisp", function () {
       expect(parse("(x (y) (a b c))")).toEqual(["x", ["y"], ["a", "b", "c"]]);
     });
 
-    // it("should lex function", function () {
-    //   let f = new Function();
-    //   expect(parse("(\\ (x y) (x y))")).toEqual(["x", ["y"], ["a", "b", "c"]]);
-    // });
+    it("should lex function", function () {
+      expect(parse("(\\ (x y) (x y))")).toEqual(
+        new Lambda(["x", "y"], ["x", "y"])
+      );
+    });
+
+    it("should lex application", function () {
+      expect(parse("((\\ (x y) (x y)) a b)")).toEqual([
+        new Lambda(["x", "y"], ["x", "y"]),
+        "a",
+        "b",
+      ]);
+    });
   });
 
   // describe("alpha reduction", function () {

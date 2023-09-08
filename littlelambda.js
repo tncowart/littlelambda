@@ -36,25 +36,23 @@ let Environment = function (scope = {}, parent = null) {
   };
 };
 
-  let curryList = input => {
-    if (isFunction(input)) {
-      if (input[1].length < 2) { return input }
+let Lambda = function (parameters, body) {
+  this.parameters = parameters;
+  this.body = body;
 
-      return input[1].reverse().reduce((acc, arg) => {
-        return [input[0], [arg], acc]
-      }, curry(input[2]))
-    } else {
-      return input.map(curry)
+  this.alphaConvert = (value, newValue) => {
+    if (value in this.parameters) {
+      return;
     }
   };
-
-  let curry = input => {
-    if (input instanceof Array) {
-      return curryList(input);
-    } else if (input.type === "identifier") {
-      return input;
+  this.apply = (args) => {
+    for (let arg of args) {
+      let newArg = structuredClone(arg);
+      let parameter = this.parameters.shift();
+      this.alphaConvert(parameter, newAlphaValue());
     }
   };
+};
 
   // De-let replaces all uses of "let" named values with the actual value
   let deletList = (input, context) => {
@@ -162,4 +160,4 @@ let tokenize = (input) => {
 // };
 let parse = (input) => letize(tokenize(input));
 
-export { parse, Environment };
+export { parse, Environment, Lambda };
