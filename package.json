@@ -3,6 +3,7 @@
   "description": "An interpreter for a little lambda calculus.",
   "author": "Thomas Cowart <georgemcfly@gmail.com> (https://tncow.art/)",
   "version": "0.1.0",
+  "type": "module",
   "scripts": {
     "test": "jasmine"
   },

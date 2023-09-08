@@ -1,61 +1,40 @@
-; (function (exports) {
-  let debugPrint = x => {
-    let p = y => {
-      if (y instanceof Array) {
-        return `(${y.map(p).join(" ")})`
-      } else {
-        return y["original-value"] ?? y.value ?? y
-      }
+let debugPrint = (x) => {
+  let p = (y) => {
+    if (y instanceof Array) {
+      return `(${y.map(p).join(" ")})`;
+    } else {
+      return y["original-value"] ?? y.value ?? y;
     }
-    console.log(p(x))
-    return x;
-  }
-
-  let Context = function (scope, parent) {
-    this.scope = scope;
-    this.parent = parent;
-
-    this.get = identifier => {
-      if (identifier in this.scope) {
-        return this.scope[identifier];
-      } else if (this.parent !== undefined) {
-        return this.parent.get(identifier);
-      }
-    };
   };
+  console.log(p(x));
+  return x;
+};
 
-  let alpha = {}
-
-  let alphaConvertId = (id) => {
-    let idCopy = { ...id }
-    idCopy["value"] = `${id.value}-${alpha[id.value]}`
-    idCopy["original-value"] = idCopy["original-value"] ?? id.value
-    return idCopy
+let newAlphaValue = (() => {
+  let alphaCounter = 0;
+  return () => {
+    let newValue = `v${alphaCounter}`;
+    alphaCounter += 1;
+    return newValue;
   };
+})();
 
-  let alphaConvert = (input) => {
-    if (input instanceof Array) {
-      if (isFunction(input)) {
-        let newParams = input[1].map(id => {
-          alpha[id.value] = (alpha[id.value] ?? 0) + 1;
-          return alphaConvertId(id, alpha);
-        });
-        return [input[0], newParams, alphaConvert(input[2], alpha)]
-      } else {
-        return input.map(x => alphaConvert(x, alpha));
-      }
-    } else if (input.type === "identifier") {
-      if (alpha[input.value] === undefined) {
-        return input;
-      } else {
-        return alphaConvertId(input, alpha);
-      }
+let Environment = function (scope = {}, parent = null) {
+  this.scope = scope;
+  this.parent = parent;
+
+  this.get = (identifier) => {
+    if (identifier in this.scope) {
+      return this.scope[identifier];
+    } else if (this.parent !== undefined) {
+      return this.parent.get(identifier);
     }
   };
 
-  let isFunction = input => {
-    return input.length == 3 && input[0].value == '\\'
-  }
+  this.set = (identifier, value) => {
+    this.scope[identifier] = value;
+  };
+};
 
   let curryList = input => {
     if (isFunction(input)) {
@@ -174,25 +153,13 @@
       }
     }
   };
+let tokenize = (input) => {
+  return input.replace(/\(/g, " ( ").replace(/\)/g, " ) ").trim().split(/\s+/);
+};
 
-  let tokenize = input => {
-    return input.replace(/\(/g, ' ( ')
-      .replace(/\)/g, ' ) ')
-      .trim()
-      .split(/\s+/);
-  };
+// let interpret = (input) => {
+//   return betaReduce(delet(curry(input)));
+// };
+let parse = (input) => letize(tokenize(input));
 
-  let interpret = input => {
-    return betaReduce(delet(curry(input)))
-  }
-
-  exports.littleLambda = {
-    parse: input => parenthesize(tokenize(input)),
-    interpret: interpret,
-    alphaConvert: alphaConvert,
-    curry: curry,
-    delet: delet,
-    betaReduce: betaReduce,
-    compile: input => compile(interpret(input))
-  };
-})(typeof exports === 'undefined' ? this : exports);
+export { parse, Environment };

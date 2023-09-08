@@ -1,4 +1,4 @@
-var t = require("../littlelambda").littleLambda;
+import { parse } from "../littlelambda.js";
 
 var is = function (input, type) {
   return Object.prototype.toString.call(input) === "[object " + type + "]";
@@ -21,52 +21,49 @@ var unannotate = function (input) {
 
 describe("littleLisp", function () {
   describe("parse", function () {
-    it("should lex a single atom", function () {
-      expect(t.parse("a").value).toEqual("a");
+    it("should lex not parse a single atom", function () {
+      expect(() => {
+        parse("a").value;
+      }).toThrow("Invalid syntax");
     });
 
     it("should lex an atom in a list", function () {
-      expect(unannotate(t.parse("()"))).toEqual([]);
+      expect(parse("()")).toEqual([]);
     });
 
     it("should lex multi atom list", function () {
-      expect(unannotate(t.parse("(hi you)"))).toEqual(["hi", "you"]);
+      expect(parse("(hi you)")).toEqual(["hi", "you"]);
     });
 
     it("should lex list containing list", function () {
-      expect(unannotate(t.parse("((x))"))).toEqual([["x"]]);
+      expect(parse("((x))")).toEqual([["x"]]);
     });
 
     it("should lex list containing list", function () {
-      expect(unannotate(t.parse("(x (x))"))).toEqual(["x", ["x"]]);
+      expect(parse("(x (x))")).toEqual(["x", ["x"]]);
     });
 
     it("should lex list containing list", function () {
-      expect(unannotate(t.parse("(x y)"))).toEqual(["x", "y"]);
+      expect(parse("(x y)")).toEqual(["x", "y"]);
     });
 
     it("should lex list containing list", function () {
-      expect(unannotate(t.parse("(x (y) z)"))).toEqual(["x", ["y"], "z"]);
+      expect(parse("(x (y) z)")).toEqual(["x", ["y"], "z"]);
     });
 
     it("should lex list containing list", function () {
-      expect(unannotate(t.parse("(x (y) (a b c))"))).toEqual([
-        "x",
-        ["y"],
-        ["a", "b", "c"],
-      ]);
+      expect(parse("(x (y) (a b c))")).toEqual(["x", ["y"], ["a", "b", "c"]]);
     });
 
-    describe("atoms", function () {
-      it("should parse out numbers", function () {
-        expect(unannotate(t.parse("(1 (a 2))"))).toEqual(["1", ["a", "2"]]);
-      });
-    });
+    // it("should lex function", function () {
+    //   let f = new Function();
+    //   expect(parse("(\\ (x y) (x y))")).toEqual(["x", ["y"], ["a", "b", "c"]]);
+    // });
   });
 
   // describe("alpha reduction", function () {
   //   it("should return list of identifiers", function () {
-  //     expect(unannotate(t.alphaConvert(t.parse("(a b 3)")))).toEqual([
+  //     expect(unannotate(t.alphaConvert(parse("(a b 3)")))).toEqual([
   //       "a",
   //       "b",
   //       "3",
@@ -74,7 +71,7 @@ describe("littleLisp", function () {
   //   });
 
   //   it("should rename lambda bound identifiers", function () {
-  //     expect(unannotate(t.alphaConvert(t.parse("(\\ (a b) (a b 3))")))).toEqual(
+  //     expect(unannotate(t.alphaConvert(parse("(\\ (a b) (a b 3))")))).toEqual(
   //       ["\\", ["a", "b"], ["a", "b", "3"]]
   //     );
   //   });
@@ -82,7 +79,7 @@ describe("littleLisp", function () {
 
   // describe("currying", function () {
   //   it("should do nothing to lambdas with zero parameters", function () {
-  //     expect(unannotate(t.curry(t.parse("(\\ () (a b 3))")))).toEqual([
+  //     expect(unannotate(t.curry(parse("(\\ () (a b 3))")))).toEqual([
   //       "\\",
   //       [],
   //       ["a", "b", "3"],
@@ -90,7 +87,7 @@ describe("littleLisp", function () {
   //   });
 
   //   it("should do nothing to lambdas with one parameter", function () {
-  //     expect(unannotate(t.curry(t.parse("(\\ (a) (a b 3))")))).toEqual([
+  //     expect(unannotate(t.curry(parse("(\\ (a) (a b 3))")))).toEqual([
   //       "\\",
   //       ["a"],
   //       ["a", "b", "3"],
@@ -98,7 +95,7 @@ describe("littleLisp", function () {
   //   });
 
   //   it("should curry lambdas with two parameters", function () {
-  //     expect(unannotate(t.curry(t.parse("(\\ (a b) (a b 3))")))).toEqual([
+  //     expect(unannotate(t.curry(parse("(\\ (a b) (a b 3))")))).toEqual([
   //       "\\",
   //       ["a"],
   //       ["\\", ["b"], ["a", "b", "3"]],
@@ -106,7 +103,7 @@ describe("littleLisp", function () {
   //   });
 
   //   it("should curry lambdas with multiple parameters", function () {
-  //     expect(unannotate(t.curry(t.parse("(\\ (a b c) (a b 3))")))).toEqual([
+  //     expect(unannotate(t.curry(parse("(\\ (a b c) (a b 3))")))).toEqual([
   //       "\\",
   //       ["a"],
   //       ["\\", ["b"], ["\\", ["c"], ["a", "b", "3"]]],
@@ -118,7 +115,7 @@ describe("littleLisp", function () {
   //   it("should rename let bound identifiers", function () {
   //     expect(
   //       unannotate(
-  //         t.delet(t.alphaConvert(t.parse("(let ((a 1) (b 2)) (\\ () (a b)))")))
+  //         t.delet(t.alphaConvert(parse("(let ((a 1) (b 2)) (\\ () (a b)))")))
   //       )
   //     ).toEqual(["\\", [], ["1", "2"]]);
   //   });
@@ -126,7 +123,7 @@ describe("littleLisp", function () {
   //   it("should rename let and lambda bound identifiers", function () {
   //     expect(
   //       unannotate(
-  //         t.delet(t.alphaConvert(t.parse("(let ((a 1) (b 2)) (\\ (b) (a b)))")))
+  //         t.delet(t.alphaConvert(parse("(let ((a 1) (b 2)) (\\ (b) (a b)))")))
   //       )
   //     ).toEqual(["\\", ["b"], ["1", "b"]]);
   //   });
@@ -137,7 +134,7 @@ describe("littleLisp", function () {
   //     expect(
   //       unannotate(
   //         t.betaReduce(
-  //           t.alphaConvert(t.parse("((\\ (a) (\\ (b) (a b))) (c d))"))
+  //           t.alphaConvert(parse("((\\ (a) (\\ (b) (a b))) (c d))"))
   //         )
   //       )
   //     ).toEqual(["\\", ["b"], [["c", "d"], "b"]]);
@@ -147,7 +144,7 @@ describe("littleLisp", function () {
   //     expect(
   //       unannotate(
   //         t.betaReduce(
-  //           t.alphaConvert(t.parse("((\\ (a) (\\ (b) (a b))) (c d) (q x))"))
+  //           t.alphaConvert(parse("((\\ (a) (\\ (b) (a b))) (c d) (q x))"))
   //         )
   //       )
   //     ).toEqual([
@@ -161,7 +158,7 @@ describe("littleLisp", function () {
   //       unannotate(
   //         t.betaReduce(
   //           t.alphaConvert(
-  //             t.parse("((\\ (a) (\\ (b) (a b))) (c d) (q x) (p o))")
+  //             parse("((\\ (a) (\\ (b) (a b))) (c d) (q x) (p o))")
   //           )
   //         )
   //       )
@@ -178,14 +175,14 @@ describe("littleLisp", function () {
   // describe("interpret", function () {
   //   describe("lists", function () {
   //     it("should return empty list", function () {
-  //       expect(unannotate(t.interpret(t.parse("()")))).toEqual([]);
+  //       expect(unannotate(t.interpret(parse("()")))).toEqual([]);
   //     });
 
   //     it("should return false", function () {
   //       expect(
   //         unannotate(
   //           t.interpret(
-  //             t.parse(`
+  //             parse(`
   //       (let ((TRUE (\\ (x y) x))
   //             (FALSE (\\ (x y) y))
   //             (AND (\\ (x y) (x y x))))
@@ -199,7 +196,7 @@ describe("littleLisp", function () {
   //       expect(
   //         unannotate(
   //           t.interpret(
-  //             t.parse(`
+  //             parse(`
   //       (let ((TRUE (\\ (x y) x))
   //             (FALSE (\\ (x y) y))
   //             (AND (\\ (x y) (x y x))))
@@ -214,12 +211,12 @@ describe("littleLisp", function () {
   // describe("compile", function () {
   //   describe("lists", function () {
   //     it("should return empty list", function () {
-  //       expect(unannotate(t.compile(t.parse("()")))).toEqual([]);
+  //       expect(unannotate(t.compile(parse("()")))).toEqual([]);
   //     });
 
   //     it("should return false", function () {
   //       let _false = t.compile(
-  //         t.parse(`
+  //         parse(`
   //       (let ((TRUE (\\ (x y) x))
   //             (FALSE (\\ (x y) y))
   //             (AND (\\ (x y) (x y x))))
@@ -231,7 +228,7 @@ describe("littleLisp", function () {
 
   //     it("should return true", function () {
   //       let _true = t.compile(
-  //         t.parse(`
+  //         parse(`
   //       (let ((TRUE (\\ (x y) x))
   //             (FALSE (\\ (x y) y))
   //             (AND (\\ (x y) (x y x))))
