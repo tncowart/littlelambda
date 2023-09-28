@@ -26,7 +26,7 @@ let Environment = function (scope = {}, parent = null) {
   this.get = (identifier) => {
     if (identifier in this.scope) {
       return this.scope[identifier];
-    } else if (this.parent !== undefined) {
+    } else if (this.parent) {
       return this.parent.get(identifier);
     }
   };
@@ -54,103 +54,109 @@ let Lambda = function (parameters, body) {
   };
 };
 
-  // De-let replaces all uses of "let" named values with the actual value
-  let deletList = (input, context) => {
-    if (input.length == 3 && input[0].value === "let") {
-      let ctx = input[1].reduce((acc, binding) => {
-        acc.scope[binding[0].value] = binding[1]
-        return acc
-      }, new Context({}, context));
-      return delet(input[2], ctx);
+let compile = (input) => {
+  let c = (i) => {
+    if (isFunction(i)) {
+      return `${i[1][0].value} => { return ${c(i[2])} }`;
+    } else if (i instanceof Array) {
+      return `[${i.map(c).join(", ")}]`;
     } else {
-      return input.map(x => delet(x, context));
+      return i.value;
     }
-  }
-
-  let delet = (input, context) => {
-    if (context === undefined) {
-      return delet(input, new Context({}))
-    } else if (input instanceof Array) {
-      return deletList(input, context);
-    } else if (input.type === "identifier") {
-      return context.get(input.value) ?? input;
-    }
-  }
-
-  let isFunctionApplication = input => {
-    return input instanceof Array && input.length > 1 && isFunction(input[0])
-  }
-
-  let replaceIdentifier = (item, identifier, replacement) => {
-    if (isFunction(item)) {
-      return [item[0], item[1], replaceIdentifier(item[2], identifier, replacement)]
-    } else if (item instanceof Array) {
-      return item.map(x => replaceIdentifier(x, identifier, replacement))
-    } else if (item.value === identifier.value) {
-      return replacement
-    } else {
-      return item
-    }
-  }
-
-  let reduceLambda = (lambda, arg) => {
-    let paramId = lambda[1][0];
-    return replaceIdentifier(lambda[2], paramId, arg);
-  }
-
-  let betaReduce = input => {
-    if (isFunctionApplication(input)) {
-      return input.slice(1).reduce(function (acc, l) {
-        if (!isFunction(acc[0])) { return acc }
-
-        if (acc.slice(2).length == 0) { return reduceLambda(acc[0], l) } // were reducing with the last arg
-
-        return betaReduce([reduceLambda(acc[0], l), ...acc.slice(2)])
-      }, input)
-    } else if (input instanceof Array) {
-      return input.map(betaReduce)
-    } else {
-      return input
-    }
-  }
-
-  let compile = input => {
-    let c = i => {
-      if (isFunction(i)) {
-        return `${i[1][0].value} => { return ${c(i[2])} }`;
-      } else if (i instanceof Array) {
-        return `[${i.map(c).join(", ")}]`;
-      } else {
-        return i.value;
-      }
-    }
-
-    // Never eval IRL
-    return eval(c(input))
-  }
-
-  let id_checker = input => {
-    if (input.indexOf("-") != -1) { throw `Invalid identifier: ${input}\n  "-" is not allowed in identifiers` }
-    return { type: 'identifier', value: input };
   };
 
-  let parenthesize = (input, list) => {
-    if (list === undefined) {
-      return parenthesize(input, []);
+  // Never eval IRL
+  return eval(c(input));
+};
+
+let paramaterize = (input) => {
+  let args = [];
+  let token = input.shift(); // "("
+  token = input.shift();
+  while (token != ")") {
+    args.push(token);
+    token = input.shift();
+  }
+
+  return args;
+};
+
+let functionize = (input, environment) => {
+  let func = new Lambda(
+    paramaterize(input),
+    parenthesize(input, environment, null)
+  );
+  input.shift(); // remove final ) of function
+  return func;
+};
+
+let letContext = (input) => {
+  let environment = new Environment({}, null);
+  input.shift(); // skip first (
+  while (true) {
+    let token = input.shift();
+    if (token === "(") {
+      let identifier = input.shift();
+      input.shift(); // skip first function (
+      input.shift(); // skip \
+      environment.set(identifier, functionize(input, environment));
     } else {
-      let token = input.shift();
-      if (token === undefined) {
-        return list.pop();
-      } else if (token === "(") {
-        list.push(parenthesize(input, []));
-        return parenthesize(input, list);
-      } else if (token === ")") {
-        return list;
-      } else {
-        return parenthesize(input, list.concat(id_checker(token)));
-      }
+      break;
     }
-  };
+  }
+
+  input.shift(); // skip last )
+  return environment;
+};
+
+let letize = (input) => {
+  let token = input.shift();
+  if (token === "(") {
+    let lookahead = input.shift();
+    if (lookahead == "let") {
+      let environment = letContext(input);
+      return parenthesize(input, environment, null);
+    } else {
+      input.unshift(lookahead);
+      input.unshift(token);
+      return parenthesize(input, new Environment({}, null), null);
+    }
+  } else {
+    throw "Invalid syntax";
+  }
+};
+
+let parenthesize = (input, environment, list) => {
+  let token = input.shift();
+  if (token === undefined) {
+    return list.pop();
+  } else if (token === "(") {
+    if (list == null) {
+      return parenthesize(input, environment, []);
+    }
+
+    list.push(parenthesize(input, environment, []));
+    return parenthesize(input, environment, list);
+  } else if (token === "\\") {
+    list.push(functionize(input, environment));
+    return parenthesize(input, environment, list);
+  } else if (token === ")") {
+    return list;
+  } else {
+    if (list == null) {
+      list = [];
+    }
+
+    if (environment && environment.get(token)) {
+      list.push(environment.get(token));
+    } else {
+      list.push(token);
+    }
+
+    return parenthesize(input, environment, list);
+  }
+};
+
 let tokenize = (input) => {
   return input.replace(/\(/g, " ( ").replace(/\)/g, " ) ").trim().split(/\s+/);
 };

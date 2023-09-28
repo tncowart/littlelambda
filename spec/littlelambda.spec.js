@@ -63,49 +63,65 @@ var unannotate = function (input) {
   }
 };
 
-describe("littleLisp", function () {
+describe("littleLambda", function () {
   describe("parse", function () {
-    it("should lex not parse a single atom", function () {
+    it("should not parse a single atom", function () {
       expect(() => {
         parse("a").value;
       }).toThrow("Invalid syntax");
     });
 
-    it("should lex an atom in a list", function () {
+    it("should parse an empty list", function () {
       expect(parse("()")).toEqual([]);
     });
 
-    it("should lex multi atom list", function () {
+    it("should parse multi atom list", function () {
       expect(parse("(hi you)")).toEqual(["hi", "you"]);
     });
 
-    it("should lex list containing list", function () {
+    it("should parse a list containing list", function () {
       expect(parse("((x))")).toEqual([["x"]]);
     });
 
-    it("should lex list containing list", function () {
+    it("should parse a list containing list", function () {
       expect(parse("(x (x))")).toEqual(["x", ["x"]]);
     });
 
-    it("should lex list containing list", function () {
+    it("should parse a list containing list", function () {
       expect(parse("(x y)")).toEqual(["x", "y"]);
     });
 
-    it("should lex list containing list", function () {
+    it("should parse a list containing list", function () {
       expect(parse("(x (y) z)")).toEqual(["x", ["y"], "z"]);
     });
 
-    it("should lex list containing list", function () {
+    it("should parse a list containing list", function () {
       expect(parse("(x (y) (a b c))")).toEqual(["x", ["y"], ["a", "b", "c"]]);
     });
 
-    it("should lex function", function () {
-      expect(parse("(\\ (x y) (x y))")).toEqual(
+    it("should parse a function", function () {
+      expect(parse("(\\(x y) (x y))")).toEqual(
         new Lambda(["x", "y"], ["x", "y"])
       );
     });
 
-    it("should lex application", function () {
+    it("should parse a let", function () {
+      expect(
+        parse(`(let
+  (
+    (TRUE (\\ (x y) x))
+    (FALSE (\\ (x y) y))
+  )
+
+  ((\\ (x y) (x y)) TRUE)
+)`)
+      ).toEqual([
+        new Lambda(["x", "y"], ["x", "y"]),
+        new Lambda(["x", "y"], ["x"]),
+      ]);
+    });
+
+    it("should parse application", function () {
       expect(parse("((\\ (x y) (x y)) a b)")).toEqual([
         new Lambda(["x", "y"], ["x", "y"]),
         "a",
